@@ -25,7 +25,20 @@ const particleOptions = {
 		}
 	}
 }
-
+const initialState = {
+        input: '',
+        route: 'signin',
+        isSignedIn: false,
+        imageUrl: '',
+        boxes: [],
+        user: {
+          id : '',
+          name : '',
+          email : '',
+          entries : 0,
+          joined : ''
+        }
+}
 class App extends Component {
   	constructor(){
   		super();
@@ -111,6 +124,7 @@ class App extends Component {
              .then(count => {
               this.setState(Object.assign(this.state.user, {entries: count}))
              })
+             .then(err => console.log(err));
           }
           this.displayFaceBox(this.calculateFaceLocation(response))
         })
@@ -119,8 +133,8 @@ class App extends Component {
 
 
     onRouteChange = (route) =>{
-      if(route === 'signout'){
-        this.setState({isSignedIn: false})
+      if(route === 'signin'){
+        this.setState(initialState)
       }else if(route === 'home'){
         this.setState({isSignedIn: true})
       }
@@ -133,11 +147,11 @@ class App extends Component {
     		<div className="App">
      			<Particles className='particles'
      				params = {particleOptions}/>
-            {this.state.route === 'signin' ?
-              <Signin onRouteChange = {this.onRouteChange} loadUser = {this.loadUser} />
+            {this.state.route === 'register' ?
+               <Register onRouteChange = {this.onRouteChange} loadUser = {this.loadUser} />
               : this.state.route === 'home' ?
                 <div>
-                  <Navigation onRouteChange={this.onRouteChange} isSignedIn={isSignedIn}/>
+                  <Navigation onRouteChange={this.onRouteChange}/>
                   <div>
                      <Logo />
                      <Rank name = {this.state.user.name} entries = {this.state.user.entries} />
@@ -147,7 +161,7 @@ class App extends Component {
                       <FaceRecognition boxes={this.state.boxes} imageUrl={this.state.imageUrl} />
                   </div>
                 </div>
-                : <Register onRouteChange = {this.onRouteChange} loadUser = {this.loadUser} />
+                : <Signin onRouteChange = {this.onRouteChange} loadUser = {this.loadUser} />
             }
       			
     		</div>
