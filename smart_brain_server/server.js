@@ -2,6 +2,7 @@ const express = require("express");
 const bodyParser = require('body-parser');
 const bcrypt = require('bcrypt-nodejs');
 const cors = require('cors');
+const Clarifai = require('clarifai');
 const knex = require('knex')({
 	  client: 'pg',
 	  connection: {
@@ -12,42 +13,43 @@ const knex = require('knex')({
      }
 });
 
+const api_app = new Clarifai.App({
+  apiKey: 'YOUR_API_KEY'
+});
+
+const handleApiCall = (req, res) => {
+	api_app.models
+      .predict(Clarifai.FACE_DETECT_MODEL, req.body.input)
+      .then(data => {
+      	res.json(data);
+      })
+      .catch(err => res.status(400).json("Unable to connect"))
+}
+
 const app = express();
 
 app.use(bodyParser.json());
 app.use(cors())
 
-const database = {
-	users:[
-	   {
-	   	id : '30',
-	   	name : 'Steph',
-	   	email : 'curry@gmail.com',
-	   	password : 'chef',
-	   	entries : 0,
-	   	joined : new Date()
-	   },
-	   {
-	   	id : '11',
-	   	name : 'Klay',
-	   	email : 'thompson@gmail.com',
-	   	password : 'splashBro',
-	   	entries : 0,
-	   	joined : new Date()
-	   }
-	]
-}
+app.post('/imageurl', (req, res) => { 
+	handleApiCall(req, res);
+})
+
 app.get('/', (req, res) => {
 	res.send(database.users);
 })
 app.post('/signin', (req, res) =>{
-	knex.select('email', 'hash').from('login')
-		.where('email', '=', req.body.email)
+	const {email, password } = req.body;
+	if(!email || !password){
+		res.status(400).json("Incorrect form submission");
+	}else{
+		knex.select('email', 'hash').from('login')
+		.where('email', '=', email)
 		.then(data => {
-			const isValid = bcrypt.compareSync(req.body.password, data[0].hash);
+			const isValid = bcrypt.compareSync(password, data[0].hash);
 			if(isValid){
 				return knex.select('*').from('users')
-					.where('email', '=', req.body.email)
+					.where('email', '=', email)
 					.then(user => {
 						res.json(user[0])
 					})
@@ -57,10 +59,14 @@ app.post('/signin', (req, res) =>{
 			}
 		})
 		.catch(err => res.status(400).json('wrong credentials'))
+	}
 })
 app.post('/register', (req, res) => { 
 	const { email, name, password } = req.body;
-	const hash = bcrypt.hashSync(password);
+	if(!email || !password || !name){
+		res.status(400).json("Incorrect form submission");
+	}else{
+		const hash = bcrypt.hashSync(password);
 		knex.transaction(trx => {
 			trx.insert({
 				hash: hash,
@@ -84,6 +90,7 @@ app.post('/register', (req, res) => {
 			.catch(trx.rollback)
 		})
 		.catch(err => res.status(400).json("unable to register"));
+	}
 })
 app.get('/profile/:id', (req, res) =>{
 	const { id } = req.params;

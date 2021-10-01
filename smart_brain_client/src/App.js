@@ -10,9 +10,7 @@ import Register from './components/Register/Register';
 import Particles from 'react-particles-js';
 import FaceRecognition from './components/FaceRecognition/FaceRecognition';
 
-const app = new Clarifai.App({
-  apiKey: 'YOUR_API_KEY'
-});
+
 
 const particleOptions = {
 	particles: {
@@ -107,10 +105,15 @@ class App extends Component {
 
     onPictureSubmit = () => {
       this.setState({imageUrl : this.state.input})
-      app.models
-      .predict(
-        Clarifai.FACE_DETECT_MODEL,
-        this.state.input)
+        fetch('http://localhost:3000/imageurl', {
+              method: 'post',
+              headers: {'Content-Type': 'application/json'},
+              body: JSON.stringify({
+                input: this.state.input
+              })
+            })
+        .then(response => response.json())
+        .catch(err => console.log("Hellooo"))
         .then(response =>{
           if(response){
             fetch('http://localhost:3000/image', {
